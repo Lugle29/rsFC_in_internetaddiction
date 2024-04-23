@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-@title: analysis
-@author: l.glenzer
+@ filename: analysis
+@ author: l.glenzer
 """
 
-############################### Libraries ####################################
 import os
 import statistics
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import pingouin as pg
-from scipy import stats
 import functions as fn
+from scipy import stats
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
 from statsmodels.graphics.gofplots import qqplot
@@ -47,6 +46,7 @@ print('p-value:', IAT_norm.pvalue)
 ### Perform the Kolmogorov-Smirnov test
 statistic, p_value = stats.kstest(data_prep[data_prep['sex'] == 0]['age'],
                                   data_prep[data_prep['sex'] == 1]['age'])
+
 ### Print the results
 print('Kolgomorov-Smirnov Test')
 print('Test Statistic:', statistic)
@@ -54,7 +54,6 @@ print('p-value:', p_value)
 
 ## Conduct MW-U Test to test for differences on age distribution over gender
 ## In prepared data women are coded as 1 and men are coded as 0
-
 u_statistic, p_value = stats.mannwhitneyu(data_prep[data_prep['sex'] == 0]['age'],
                                           data_prep[data_prep['sex'] == 1]['age'])
 ### Print results
@@ -193,7 +192,7 @@ fc_df = fc_df.drop(columns = ['ID'])
 def get_avg_fc (data = fc_df, absolute = False):
     '''
     Function to compute average FC strength for between and within networks. 
-    Besides default average also absolute average can be computed
+    Besides default average also absolute average can be computed.
 
     Parameters
     ----------
@@ -253,6 +252,7 @@ def get_avg_fc (data = fc_df, absolute = False):
         avg_fc['mean'].append(np.mean(data[columns[conn]]))
         avg_fc['sd'].append(np.nanstd(data[columns[conn]])) 
     
+    # Average over networks
     for group in predictor_groups.keys():
         avg_fc['network'].append(group)
         avg_fc['mean'].append(np.mean(data[list(predictor_groups[group])]))
@@ -267,3 +267,453 @@ print('The average FC is:')
 print(avg_fc)
 print('\n The absolute average FC is:')
 print(abs_avg_fc)
+
+############################ ML Results #######################################
+# Get Results Data
+path_to_results = os.path.join(os.getcwd(),'res_ml_IAT_CV\IAT_results.pickle')
+res = pd.read_pickle(path_to_results)
+# Get ML Data
+path_to_data = os.path.join(os.getcwd(),'data\ml_data_prep.xlsx')
+if os.path.exists(path_to_data):
+    data = pd.read_excel(path_to_data)
+else:
+    data = fn.get_prepared_data()
+
+# Get mae, mse and r2 scores
+def get_scores(res = res):
+    
+    # prepare dictionary to save results in
+    scores_dict = {'original':[],'shuffled':[]}
+    
+    # iterate over versions and metrics
+    for version in ['original','shuffled']:
+        # initialize metrics
+        metrics = ['mae','mse','r2']
+        # add shuffle indicator
+        if version == 'shuffled':
+            ind = '_sh'
+        else:
+            ind = ''
+        # initialize score list
+        tot_scores = []
+        
+        # iterate through CV-iterations
+        for iteration, result in enumerate(res['scores'+ind]):
+            iter_scores = []
+            # Extract scores
+            for score in metrics:
+                iter_scores.append(result[score])
+            tot_scores.append(iter_scores)
+        
+        # save as Dataframe
+        df         = pd.DataFrame(tot_scores)
+        metrics    = [m+ind for m in metrics]
+        df.columns = metrics
+        
+        # save in dictionary
+        scores_dict[version] = df
+        
+    # merge in one DataFrame
+    results = pd.merge(scores_dict['original'], scores_dict['shuffled'],
+                       left_index=True, right_index=True)
+        
+    # extract hyperparameters
+    ## prepare lists to save in
+    colsample_bytree = []
+    extra_trees      = []
+    path_smooth      = []
+    
+    # iterate through CV-iterations
+    for iteration in range(len(res['best_params'])):
+        colsample_bytree.append(res['best_params'][iteration]['estimator__regressor__colsample_bytree'])
+        extra_trees.append(res['best_params'][iteration]['estimator__regressor__extra_trees'])
+        path_smooth.append(res['best_params'][iteration]['estimator__regressor__path_smooth'])
+    
+    # save in dataframe
+    results['colsample_bytree'] = colsample_bytree
+    results['extra_trees']      = extra_trees
+    results['path_smooth']      = path_smooth
+
+    summary = results.describe()
+    
+    return results, summary
+
+results, summary = get_scores()
+description = results.describe()
+
+############################### Model Scores ##################################
+# Perform Linear Regressions on Scores by Hyperparameters
+## Prepare columns
+results['extra_trees'] = results['extra_trees'].astype(int)
+
+## Test for normality of 'Path Smooth'
+shapiro_test = stats.shapiro(results['path_smooth'])
+print('Shapiro-Wilk test statistic:', shapiro_test[0])
+print('Shapiro-Wilk test p-value:', shapiro_test[1])
+
+# Fit Model
+X = sm.add_constant(results[['path_smooth', 'colsample_bytree']])
+model = sm.OLS(results['mae'], X).fit()
+print(model.summary())
+
+## Residuals
+residuals = model.resid
+
+## Shapiro-Wilk test for normality
+shapiro_test = stats.shapiro(residuals)
+print('Shapiro-Wilk Test Results:')
+print('Test Statistic:', shapiro_test[1])
+print('p-value:', shapiro_test[1])
+
+## QQ-Plot for Normality
+qq_plot()
+
+## Breusch-Pagan test for homoscedasticity 
+bp_test = sm.stats.diagnostic.het_breuschpagan(residuals, X)
+
+## Extract test statistics and p-values
+test_statistic = bp_test[0]
+p_value = bp_test[1]
+
+## Display results
+print('Breusch-Pagan Test Results:')
+print('Test Statistic:', test_statistic)
+print('p-value:', p_value)
+
+# Compute t-tests for model evaluation
+## Identify Outliers
+def winsorising(win_data = data):
+    '''
+    Function to perform winsorising: outliers which are revealed by 1.5xIQR rule
+    are assigned new values such that they stay maximum values but do not bias
+    the mean as much.
+
+    Parameters
+    ----------
+    data : pd.Series
+        pd.Series with values which schould be winsorized. Winsorising is applied
+        columnwise
+
+    Returns
+    -------
+    data : pd.Series
+        Transformed pd.Series in the same shape as input.
+
+    '''
+    
+    # Check for data type
+    if type(win_data) == list:
+        win_data = pd.Series(data)
+    
+    # Calculate quartiles and IQR
+    Q1  = np.percentile(win_data, 25)
+    Q3  = np.percentile(win_data, 75)
+    IQR = Q3 - Q1
+    
+    # Identify outliers
+    lower_bound      = Q1 - 1.5 * IQR
+    upper_bound      = Q3 + 1.5 * IQR
+    outliers_indices = np.where((win_data < lower_bound) | (win_data> upper_bound))
+    outliers_list    = outliers_indices[0].tolist()
+    
+    # Assign new values
+    win_data[outliers_list] = np.clip(win_data[outliers_list],
+                                      lower_bound,
+                                      upper_bound)
+    
+    return win_data
+
+# Conduct t-tests to assess the difference in model performance between versions
+def results_t_statistics(data = results, win = False):
+    '''
+    Function to perform paired one-sample ttests on model perfomance scores
+    based on model version. Furthermore effect size and descriptive statistics
+    are computed and stored
+
+    Parameters
+    ----------
+    data : DataFrame, optional
+        DataFrame which is obtained by the get_scores function. All performance
+        scores in the respective CV-iteration are contained. 
+        The default is results.
+    win : bool, optional
+        Decide if data should be winsorized before analysis. The decision has 
+        to be done after inspecting box-plots for each metric.
+        The default is False.
+
+    Returns
+    -------
+    score_stats : Dictionary
+        Sorted after each metric, all important stats for ttest (mean, sd
+        t-value, p-value, CI and d) are stored.
+
+    '''
+    # Objects to store results
+    score_names = ['mae', 'mse', 'r2']
+    score_stats = {}
+    
+    # Check if data should be winsorized
+    if win == True:
+        for col in data.columns:
+            if data[col].dtype != bool:
+                data[col] = winsorising(data[col])
+    
+    # Conduct t-tests for the pre-specified performance scores
+    for i in score_names: 
+        # Tested direction differs between r2 and the other two metrics
+        if i == 'r2':
+            d = (statistics.mean(data[i])-
+                 statistics.mean(data[i+'_sh']))/statistics.stdev(data[i+'_sh'])
+            stat_res = pg.ttest(x=data[i],
+                                y=data[i+'_sh'],
+                                paired=True,
+                                alternative = 'greater')
+        else:
+            d = (statistics.mean(data[i+'_sh'])-
+                 statistics.mean(data[i]))/statistics.stdev(data[i+'_sh'])
+            stat_res = pg.ttest(x=data[i],
+                                y=data[i+'_sh'],
+                                paired=True,
+                                alternative = 'less')
+            
+        # Get means and sd's of groups
+        mean = np.mean(data[i])
+        mean_sh = np.mean(data[i+'_sh'])
+        sd = np.std(data[i])
+        sd_sh = np.std(data[i+'_sh'])
+        
+        # Store values in dictionary
+        score_stats[i] = {'t_statistic' : stat_res.iloc[0,0],
+                          'p_value' : stat_res.iloc[0,3],
+                          'd' : d, 'mean':mean, 'mean_sh':mean_sh,
+                          'sd':sd, 'sd_sh':sd_sh,
+                          'CI95%':stat_res.iloc[0,4]}
+            
+    return score_stats
+
+score_stats = results_t_statistics(win = False)
+score_stats_win = results_t_statistics(win = True)
+
+# Convert to usual decimal form as a string
+def get_normal_notation(x):
+    normal = '{:.15f}'.format(x)
+    return normal
+print(f'Comparison of mean-absolute-error (MAE) results in ' 
+      f't:{round(score_stats["mae"]["t_statistic"],4)}, '
+      f'p:{get_normal_notation(score_stats["mae"]["p_value"])[0:5]} ' 
+      f'and d:{round(score_stats["mae"]["d"],3)}')
+print(f'Comparison of mean-squared-error (MSE) results in ' 
+      f't:{round(score_stats["mse"]["t_statistic"],4)}, '
+      f'p:{get_normal_notation(score_stats["mse"]["p_value"])[0:5]} ' 
+      f'and d:{round(score_stats["mse"]["d"],3)}')
+print(f'Comparison of r-squared (r2) results in ' 
+      f't:{round(score_stats["r2"]["t_statistic"],4)}, '
+      f'p:{get_normal_notation(score_stats["r2"]["p_value"])[0:5]} ' 
+      f'and d:{round(score_stats["r2"]["d"],3)}')
+
+######################### SHAP-scores #########################################
+## Scores
+def get_shap(res = res, shuffled = False):
+    '''
+    Function to extract the SHAP-scores out of the results object
+
+    Parameters
+    ----------
+    res : dictionary, optional
+        Dictionary with all results where the SHAP-scores need to be extracted
+        out. The default is res.
+    shuffled : bool, optional
+        Decision if the SHAP-scores from the original or the shuffled model 
+        should be extracted. The default is False.
+
+    Returns
+    -------
+    shap_scores : Dictionary
+        Ditionary containing dataframes for each CV-iteration. The dataframes
+        consist of SHAP-scores for each subject in the respective test-set (rows)
+        and each predictor (column)
+    shap_score_summary : Dictionary
+        Summary fopr each DataFrame in shap_scores.
+    shap_score_mean : Dictionary
+        Keys for each predictor in which a list with all mean SHAP-scores for
+        each iteration is stored.
+
+    '''
+    
+    # Name the version where to extract the values
+    if shuffled:
+        expl = 'explainations_sh'
+    else:
+        expl = 'explainations'
+        
+    # Prepare storing objects    
+    shap_scores = {}
+    shap_score_summary = {}
+    
+    # Iterate through each CV-iteation
+    for i, j in enumerate(res[expl]):
+        # Extract SHAP-scores
+        df = pd.DataFrame(j.values, columns=j.data.columns)
+        shap_scores[i] = df
+        # Get description for each extracted DataFrame
+        df_desc = pd.DataFrame(df.describe())
+        shap_score_summary[i] = df_desc
+    
+    # Get average SHAP-score for each predictor and iteration 
+    columns = shap_score_summary[0].columns
+    shap_score_mean = {}
+    for col in columns:
+        l = []
+        for iteration in range(len(shap_score_summary)):
+            l.append(shap_score_summary[iteration][col][1])
+        shap_score_mean[col] = l
+        
+    return shap_scores, shap_score_summary, shap_score_mean
+
+shap_scores, shap_score_summary, shap_score_mean = get_shap(shuffled = False)
+shap_scores_sh, shap_score_summary_sh, shap_score_mean_sh = get_shap(shuffled = True)
+    
+# Get Dataframes for Insights
+def get_shap_descriptions(shap_score_mean = shap_score_mean, 
+                          shap_score_mean_sh = shap_score_mean_sh):
+    '''
+    
+
+    Parameters
+    ----------
+    shap_score_mean : TYPE, optional
+        DESCRIPTION. The default is shap_score_mean.
+    shap_score_mean_sh : TYPE, optional
+        DESCRIPTION. The default is shap_score_mean_sh.
+
+    Returns
+    -------
+    shap_description : TYPE
+        DESCRIPTION.
+    shap_description_sh : TYPE
+        DESCRIPTION.
+
+    '''
+    
+    # Turn dictionaries in DataFrames
+    shap_dataframe = pd.DataFrame(shap_score_mean)
+    shap_dataframe_sh = pd.DataFrame(shap_score_mean_sh)
+    
+    # Get description of DataFrames
+    shap_description = pd.DataFrame(shap_dataframe.describe())
+    shap_description_sh = pd.DataFrame(shap_dataframe_sh.describe())
+    
+    return shap_description, shap_description_sh
+
+shap_description, shap_description_sh = get_shap_descriptions()
+
+# Prepare SHAP values for t.tests
+def shap_t_statistics(shap_score_mean = shap_score_mean, 
+                      shap_score_mean_sh = shap_score_mean_sh,
+                      win = False):
+    '''
+    
+
+    Parameters
+    ----------
+    shap_score_mean : TYPE, optional
+        DESCRIPTION. The default is shap_score_mean.
+    shap_score_mean_sh : TYPE, optional
+        DESCRIPTION. The default is shap_score_mean_sh.
+    win : TYPE, optional
+        DESCRIPTION. The default is False.
+
+    Returns
+    -------
+    comparison : TYPE
+        DESCRIPTION.
+    shap_statistics : TYPE
+        DESCRIPTION.
+
+    '''
+    comparison = {}
+    for i in list(shap_score_mean.keys()):
+        comparison[i] = pd.DataFrame({'real':shap_score_mean[i],
+                                  'shuffled':shap_score_mean_sh[i]})
+    
+    if win:
+        for feat in comparison.keys():
+            for col in comparison[feat].columns:
+                comparison[feat][col] = winsorising(comparison[feat][col])
+    
+    # Perform a t-test
+    t_stat = {}
+    p_val = {}
+    confint = {}
+    d = {}
+    mean = {}
+    mean_sh = {}
+    sd = {}
+    sd_sh = {}
+    for i in list(comparison.keys()):
+        # Conduct t-test
+        stat_res = pg.ttest(x=comparison[i]['real'], 
+                            y=comparison[i]['shuffled'], 
+                            paired=True, 
+                            alternative = 'greater')
+        
+        # Compute and store relevant statistics
+        t_stat[i] = stat_res.iloc[0,0]
+        p_val[i] = stat_res.iloc[0,3]
+        confint[i] = stat_res.iloc[0,4]
+        d[i] = stat_res.iloc[0,5]
+        mean[i] = np.mean(shap_score_mean[i])
+        mean_sh[i] = np.mean(shap_score_mean_sh[i])
+        sd[i] = np.std(shap_score_mean[i])
+        sd_sh[i] = np.std(shap_score_mean_sh[i])
+    
+    # Save summary in dictionary
+    shap_statistics = {'t_statistic':t_stat, 'p_value': p_val,
+                       'CI95%':confint, 'd':d, 'mean':mean,
+                       'mean_sh':mean_sh, 'sd':sd, 'sd_sh':sd_sh}
+        
+    return comparison, shap_statistics
+
+comparison, shap_statistics = shap_t_statistics()
+comparison_win, shap_statistics_win = shap_t_statistics(win = True)
+
+# List absolute mean SHAP values
+def list_overall_mean(shap_score_mean = shap_score_mean,
+                      shap_score_mean_sh = shap_score_mean_sh):
+    '''
+    
+
+    Parameters
+    ----------
+    shap_score_mean : TYPE, optional
+        DESCRIPTION. The default is shap_score_mean.
+    shap_score_mean_sh : TYPE, optional
+        DESCRIPTION. The default is shap_score_mean_sh.
+
+    Returns
+    -------
+    overall_mean : TYPE
+        DESCRIPTION.
+    overall_sd : TYPE
+        DESCRIPTION.
+
+    '''
+    
+    # Split data in both model versions 
+    data = {'original':shap_score_mean, 'shuffled':shap_score_mean_sh}
+    
+    # Prepare objects to store results
+    overall_mean = {'original':{}, 'shuffled':{}}
+    overall_sd = {'original':{}, 'shuffled':{}}
+    
+    # Iterate over each model version
+    for version in data.keys():
+        # Iterate over each predictor
+        for predictor in shap_score_mean.keys():
+            # Get Averages and SDs for each predictor
+            overall_mean[version][predictor] = np.mean(data[version][predictor])
+            overall_sd[version][predictor] = np.std(data[version][predictor])
+                                                               
+    return overall_mean, overall_sd
+
+listed_predictors, listed_predictors_sd = list_overall_mean()

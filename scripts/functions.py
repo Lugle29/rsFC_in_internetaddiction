@@ -65,7 +65,6 @@ def download_behavioral_data(
 
 
 # Retrieve files and prepare data in list
-
 def prepare_data(filedir:str, type_of_file:str = ".tsv"):
     '''
     .tsv files will be read and stored as single dataframes in a dictionary
@@ -108,7 +107,6 @@ def prepare_data(filedir:str, type_of_file:str = ".tsv"):
 
     
 # Prepare DataFrame
-
 def ids(dataframe):
     '''
     Function to clean the ID column by removing 'sub-' for each value and rename the column to 'ids' for merging
@@ -135,7 +133,6 @@ def ids(dataframe):
     return (dataframe)
 
 # Function for merging dataframes
-
 def merge_instruments(directory:str, filelist:list, startingdf:int=0):
     '''
     All collected measures will be merged into one DataFrame with a single 'ids' column and instruments as columns
@@ -165,7 +162,6 @@ def merge_instruments(directory:str, filelist:list, startingdf:int=0):
     return df
 
 # Clean behavioral Data
-
 def behav_to_work(
         df, 
         cols = ['ids','IAT_sum'],
@@ -212,7 +208,6 @@ def behav_to_work(
     return df_sub
 
 # Read behavioral data out of saved file
-
 def open_behav_data(variable_of_interest = 'IAT_sum', name_of_interest = 'IAT'):
     '''
     Checks if behav data is already stored and reads it if so. Otherwise it will
@@ -308,10 +303,9 @@ def sociodem():
     
     return socio
 
-
 #----------------Behavioral Data END-------------------------------------------
-
 #----------------Functional-Data-----------------------------------------------
+
 # Function to get the subject IDs which were analyzed in the CONN-Toolbox
 def extract_no_subjects(
         directory = os.path.join("data", "SBC_01")):
@@ -525,7 +519,6 @@ def wrap_up_connectivity(
         return dictionary
 
 #----------------Functional-Data END-------------------------------------------
-
 #----------------Wrap Up-------------------------------------------------------
 
 # Function for prepared data, without rescaling for ML pipeline

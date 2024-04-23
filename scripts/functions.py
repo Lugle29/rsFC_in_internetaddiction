@@ -281,7 +281,7 @@ def sociodem():
 
     Returns
     -------
-    socio : dataframe with ID, gender and age as columns
+    socio : dataframe with ID, sex and age as columns
 
     """
     path_retr = os.path.join(os.getcwd(), 'data/Behavioral/participants.tsv')
@@ -295,7 +295,9 @@ def sociodem():
         socio = pd.read_csv(path_retr, sep='\t', header=0)
         
         # Prepare for merging
-        socio.rename(columns={'participant_id': 'ID', 'age (5-year bins)': 'age'}, inplace=True)
+        socio.rename(columns={'participant_id': 'ID',
+                              'gender': 'sex',
+                              'age (5-year bins)': 'age'}, inplace=True)
         socio['ID'] = socio['ID'].str.replace('sub-0', '')
         
         # Save as .csv
@@ -605,8 +607,8 @@ def get_prepared_data(conn_name = 'SBC_01',
                                 variable_of_interest = variable_of_interest,
                                 name_of_interest = name_of_interest)
     
-        # Recode gender (M = 0; F = 1)
-        data['gender'].replace({'M': 0, 'F': 1}, inplace=True)
+        # Recode sex (M = 0; F = 1)
+        data['sex'].replace({'M': 0, 'F': 1}, inplace=True)
         
         # Recode age bins in cont variable (20-25 = 1, 26-30 = 2, etc.)
         sorted_data = data.sort_values(by='age', ascending=True)

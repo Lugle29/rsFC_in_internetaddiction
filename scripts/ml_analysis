@@ -3,6 +3,8 @@
 Statistical Analysis using Interpretable Machine-Learning (SAIML)
 v714
 @author: Dr. David Steyrl david.steyrl@gmail.com
+
+Adapted to present dataset - see # Specify Tasks
 '''
 
 import numpy as np

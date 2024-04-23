@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Spyder Editor
-
-This is a temporary script file.
+@title: analysis
+@author: l.glenzer
 """
+
+############################### Libraries ####################################
 import os
 import statistics
 import numpy as np

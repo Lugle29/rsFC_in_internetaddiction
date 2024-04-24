@@ -159,6 +159,7 @@ def qq_plot(residuals = residuals, save = False):
     # Save
     if save:
         plt.savefig('plots//qq_plot.png', dpi =  300)
+    # Show
        
     # Return None -------------------------------------------------------------
     return
@@ -206,9 +207,10 @@ def plot_age(data=data_unprep, save = False):
     plt.xticks(fontsize=16)
     plt.yticks(fontsize=16)
     
-    # Save --------------------------------------------------------------------
+    # Save
     if save:
         plt.savefig('plots//age_plot.png', dpi = 300)
+    # Show
     plt.show()
     
     # Return None -------------------------------------------------------------

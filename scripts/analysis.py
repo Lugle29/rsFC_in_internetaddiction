@@ -94,66 +94,168 @@ print('expected values:', white_test[3])
 
 ### Diagnostic Plots
 ### Plot for linearity
-def lin_plot_age(save = False):
+def lin_plot_age(X = X, y = y, save = False):
+    '''
+    Function for linearity plot of the relation Age-IAT
+
+    Parameters
+    ----------
+    X : DataFrame, optional
+        Predictors for linear model. The default is X.
+    y : Pandas Series, optional
+        Outcome of linear model. The default is y.
+    save : bool, optional
+        decide, if plot should be saved as .PNG. The default is False.
+
+    Returns
+    -------
+    None.
+
+    '''
+    # Preparation -------------------------------------------------------------
     # set style
     sns.set_style('whitegrid')
     
-    # plot
+    # Make Plot ---------------------------------------------------------------
+    # Regressionplot
     sns.regplot(x = X['age'], y = y,
                 line_kws = {'color': 'darkorange', 'alpha': 0.3})
+    
+    # Customise Plot
     sns.despine(left=True)
     plt.xlabel(xlabel='Age')
     
-    # save
+    # Save
     if save:
         plt.savefig('plots//lin_plot_age.png', dpi = 300)
+        
+    # Return None -------------------------------------------------------------
+    return
         
 lin_plot_age()
 
 ### Plot for normality of the residuals
 def qq_plot(residuals = residuals, save = False):
+    '''
+    QQ-Plot to check for normality of the residuals
+
+    Parameters
+    ----------
+    residuals : Pandas Series, optional
+        Containing the residuals of the actual model.
+        The default is residuals.
+    save : bool, optional
+        decide, if plot should be saved as .PNG. The default is False.
+
+    Returns
+    -------
+    None.
+
+    '''
+    # Make Plot ---------------------------------------------------------------
     # Create the Q-Q plot
     qqplot(residuals, line='s')  # 's' is for standardized line
     
-    # save
+    # Save
     if save:
         plt.savefig('plots//qq_plot.png', dpi =  300)
-        
+       
+    # Return None -------------------------------------------------------------
+    return
+
 qq_plot()
 
 # Plot Age by Group
 def plot_age(data=data_unprep, save = False):
+    '''
+    Function to plot the distribution of age stratified by sex.
+
+    Parameters
+    ----------
+    data : DataFrame, optional
+        Containing the relevant columns age and sex. 
+        The default is data_unprep.
+    save : bool, optional
+        decide, if plot should be saved as .PNG. The default is False.
+
+    Returns
+    -------
+    None.
+
+    '''
+    # Preparation -------------------------------------------------------------
     data = data.sort_values(by='age')
     # Change the size (height) of the plot
-    plt.figure(figsize= (15,8))  # Adjust the figure size as needed
+    plt.figure(figsize= (15,12))  
     
-    sns.histplot(data=data, x ='age', hue='sex', multiple='dodge', palette=sns.color_palette('Set2'), shrink=.8)
+    # Make Plot ---------------------------------------------------------------
+    # Histogram
+    sns.histplot(data=data,
+                 x ='age',
+                 hue='sex',
+                 multiple='dodge',
+                 palette=sns.color_palette('Set2'),
+                 shrink=.8,
+                 legend=False)
     
     # Customize the plot
-    plt.xlabel('Age (years)')
-    plt.ylabel('Count')
+    plt.xlabel('Age (years)', fontsize = 18)
+    plt.ylabel('Number of Participants', fontsize = 18)
     
-    # save
+    # Increase the size of numbers on the ticks
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+    
+    # Save --------------------------------------------------------------------
     if save:
         plt.savefig('plots//age_plot.png', dpi = 300)
     plt.show()
     
-plot_age()
+    # Return None -------------------------------------------------------------
+    return
+    
+plot_age(save = True)
 
 def plot_IAT(data=data_unprep, save = False):
-    # set style
-    plt.figure(figsize= (15,8))  # Adjust the figure size as needed
+    '''
+    Function to plot the distribution of IAT-values including a KDE
+
+    Parameters
+    ----------
+    data : DataFrame, optional
+        Including column for IAT values. The default is data_unprep.
+    save : bool, optional
+        decide, if plot should be saved as .PNG. The default is False.
+
+    Returns
+    -------
+    None.
+
+    '''
+    # Preparation -------------------------------------------------------------
+    # Adjust the figure size
+    plt.figure(figsize= (15,12))  
     
-    # plot
+    # Make Plot ---------------------------------------------------------------
+    # Histogram
     sns.histplot(data=data, x ='IAT', kde=True, discrete=True, alpha=0.7)
     
-    # customize the plot
-    plt.xlabel('IAT')
-    plt.ylabel('Count')
+    # Customize the plot
+    plt.xlabel('IAT', fontsize = 18)
+    plt.ylabel('Number of Participants', fontsize = 18)
     
+    # Increase the size of numbers on the ticks
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+    
+    # Save Figure
     if save:
         plt.savefig('plots//IAT_plot.png', dpi = 300)
-    plt.show()    
+    # Show Figure
+    plt.show()  
+    
+    # Return None -------------------------------------------------------------
+    return
         
 plot_IAT()
 
@@ -165,9 +267,26 @@ avg_corr = sum(fc)/len(fc)
 
 ### Plot Correlation Table
 def plot_fc(corr_mat = avg_corr, save = False):
-    
+    '''
+    Plot average connectivity strength in heatmap.
+
+    Parameters
+    ----------
+    corr_mat : DataFrame, optional
+        Correlation-Matrix for average FC-values. The default is avg_corr.
+    save : bool, optional
+        decide, if plot should be saved as .PNG. The default is False.
+
+    Returns
+    -------
+    None.
+
+    '''
+    # Prepare -----------------------------------------------------------------
+    # Set Plotsize
     plt.figure(figsize=(15,12), dpi = 480)
-        
+    
+    # Make Plot ---------------------------------------------------------------
     # Plot the heatmap with annotation
     heatmap = sns.heatmap(corr_mat, annot=True, fmt='.2f')
     
@@ -180,7 +299,12 @@ def plot_fc(corr_mat = avg_corr, save = False):
     # Save the plot
     if save:
         plt.savefig('plots//corr.png')
+    
+    # Show Plot
     plt.show()
+    
+    # Return None -------------------------------------------------------------
+    return
     
 plot_fc(save = True)
 
@@ -210,6 +334,7 @@ def get_avg_fc (data = fc_df, absolute = False):
         of networks.
 
     '''
+    # Preparation -------------------------------------------------------------
     # Prepare dictionary
     avg_fc = {'network':[], 'mean':[], 'sd':[]}
     
@@ -217,6 +342,7 @@ def get_avg_fc (data = fc_df, absolute = False):
     predictor_groups = {}
     txt_files = ['reward.txt', 'self_reference.txt', 'attention.txt']
     
+    # Read text files with assigned FCs for each network
     for txt_file in txt_files:
         file_path = os.path.join('data',txt_file)
         with open(file_path, 'r') as file:
@@ -246,6 +372,7 @@ def get_avg_fc (data = fc_df, absolute = False):
     if absolute == True:
         data = abs(data)
     
+    # Value Assignment --------------------------------------------------------
     # Average over total, inner and outer
     for conn in columns.keys():
         avg_fc['network'].append(conn)
@@ -258,6 +385,7 @@ def get_avg_fc (data = fc_df, absolute = False):
         avg_fc['mean'].append(np.mean(data[list(predictor_groups[group])]))
         avg_fc['sd'].append(np.nanstd(data[list(predictor_groups[group])]))
         
+    # Return DataFrame with M/SD for each group--------------------------------    
     return pd.DataFrame(avg_fc)
 
 avg_fc = get_avg_fc()
@@ -281,10 +409,28 @@ else:
 
 # Get mae, mse and r2 scores
 def get_scores(res = res):
-    
+    '''
+    Function to extract performance scores of the model
+
+    Parameters
+    ----------
+    res : Dictionary, optional
+        Dictionary including each metric for each CV-iteration (100).
+        The default is res.
+
+    Returns
+    -------
+    results : DataFrame
+        Metrics as columns and CV-iterations as rows.
+    summary : DataFrame
+        Summary across all iterations for each metric.
+
+    '''
+    # Preparation -------------------------------------------------------------
     # prepare dictionary to save results in
     scores_dict = {'original':[],'shuffled':[]}
     
+    # Extract Performance Metrics ---------------------------------------------
     # iterate over versions and metrics
     for version in ['original','shuffled']:
         # initialize metrics
@@ -317,7 +463,7 @@ def get_scores(res = res):
     results = pd.merge(scores_dict['original'], scores_dict['shuffled'],
                        left_index=True, right_index=True)
         
-    # extract hyperparameters
+    # Extract Hyperparameters -------------------------------------------------
     ## prepare lists to save in
     colsample_bytree = []
     extra_trees      = []
@@ -336,6 +482,7 @@ def get_scores(res = res):
 
     summary = results.describe()
     
+    # Return Results and Summary of Results -----------------------------------
     return results, summary
 
 results, summary = get_scores()
@@ -400,11 +547,12 @@ def winsorising(win_data = data):
         Transformed pd.Series in the same shape as input.
 
     '''
-    
+    # Preparation -------------------------------------------------------------
     # Check for data type
     if type(win_data) == list:
         win_data = pd.Series(data)
     
+    # Transformation ----------------------------------------------------------
     # Calculate quartiles and IQR
     Q1  = np.percentile(win_data, 25)
     Q3  = np.percentile(win_data, 75)
@@ -421,6 +569,7 @@ def winsorising(win_data = data):
                                       lower_bound,
                                       upper_bound)
     
+    # Return Transformed Data -------------------------------------------------
     return win_data
 
 # Conduct t-tests to assess the difference in model performance between versions
@@ -448,6 +597,7 @@ def results_t_statistics(data = results, win = False):
         t-value, p-value, CI and d) are stored.
 
     '''
+    # Preparation -------------------------------------------------------------
     # Objects to store results
     score_names = ['mae', 'mse', 'r2']
     score_stats = {}
@@ -458,6 +608,7 @@ def results_t_statistics(data = results, win = False):
             if data[col].dtype != bool:
                 data[col] = winsorising(data[col])
     
+    # Analysis ----------------------------------------------------------------
     # Conduct t-tests for the pre-specified performance scores
     for i in score_names: 
         # Tested direction differs between r2 and the other two metrics
@@ -488,7 +639,8 @@ def results_t_statistics(data = results, win = False):
                           'd' : d, 'mean':mean, 'mean_sh':mean_sh,
                           'sd':sd, 'sd_sh':sd_sh,
                           'CI95%':stat_res.iloc[0,4]}
-            
+    
+    # Return Results of Analysis ----------------------------------------------        
     return score_stats
 
 score_stats = results_t_statistics(win = False)
@@ -539,7 +691,7 @@ def get_shap(res = res, shuffled = False):
         each iteration is stored.
 
     '''
-    
+    # Preparation -------------------------------------------------------------
     # Name the version where to extract the values
     if shuffled:
         expl = 'explainations_sh'
@@ -550,6 +702,7 @@ def get_shap(res = res, shuffled = False):
     shap_scores = {}
     shap_score_summary = {}
     
+    # Extract SHAP-scores -----------------------------------------------------
     # Iterate through each CV-iteation
     for i, j in enumerate(res[expl]):
         # Extract SHAP-scores
@@ -568,6 +721,7 @@ def get_shap(res = res, shuffled = False):
             l.append(shap_score_summary[iteration][col][1])
         shap_score_mean[col] = l
         
+    # Return SHAP-scores in differen objects ----------------------------------    
     return shap_scores, shap_score_summary, shap_score_mean
 
 shap_scores, shap_score_summary, shap_score_mean = get_shap(shuffled = False)
@@ -577,32 +731,36 @@ shap_scores_sh, shap_score_summary_sh, shap_score_mean_sh = get_shap(shuffled = 
 def get_shap_descriptions(shap_score_mean = shap_score_mean, 
                           shap_score_mean_sh = shap_score_mean_sh):
     '''
-    
+    Function to compute the descriptions for SHAP-scores of both versions.
 
     Parameters
     ----------
-    shap_score_mean : TYPE, optional
-        DESCRIPTION. The default is shap_score_mean.
-    shap_score_mean_sh : TYPE, optional
-        DESCRIPTION. The default is shap_score_mean_sh.
+    shap_score_mean : Dictionary, optional
+        Features as keys containing lists of SHAP-values for each CV-iteration.
+        The default is shap_score_mean.
+    shap_score_mean_sh : Dictionary, optional
+        Features as keys containing lists of SHAP-values for each CV-iteration.
+        The default is shap_score_mean_sh.
 
     Returns
     -------
-    shap_description : TYPE
-        DESCRIPTION.
-    shap_description_sh : TYPE
-        DESCRIPTION.
+    shap_description : DataFrame 
+        Description of SHAP values for the original model.
+    shap_description_sh : DataFrame 
+        Description of SHAP values for the shuffled model.
 
     '''
-    
+    # Preparation -------------------------------------------------------------
     # Turn dictionaries in DataFrames
     shap_dataframe = pd.DataFrame(shap_score_mean)
     shap_dataframe_sh = pd.DataFrame(shap_score_mean_sh)
     
+    # Compute Description -----------------------------------------------------
     # Get description of DataFrames
     shap_description = pd.DataFrame(shap_dataframe.describe())
     shap_description_sh = pd.DataFrame(shap_dataframe_sh.describe())
     
+    # Return Description ------------------------------------------------------
     return shap_description, shap_description_sh
 
 shap_description, shap_description_sh = get_shap_descriptions()
@@ -612,16 +770,21 @@ def shap_t_statistics(shap_score_mean = shap_score_mean,
                       shap_score_mean_sh = shap_score_mean_sh,
                       win = False):
     '''
+    Function to conduct t-tests for SHAP-scores of each predictor between both
+    model versions
     
-
     Parameters
     ----------
-    shap_score_mean : TYPE, optional
-        DESCRIPTION. The default is shap_score_mean.
-    shap_score_mean_sh : TYPE, optional
-        DESCRIPTION. The default is shap_score_mean_sh.
-    win : TYPE, optional
-        DESCRIPTION. The default is False.
+    shap_score_mean : Dictionary, optional
+        Features as keys containing lists of SHAP-values for each CV-iteration.
+        The default is shap_score_mean.
+    shap_score_mean_sh : Dictionary, optional
+        Features as keys containing lists of SHAP-values for each CV-iteration.
+        The default is shap_score_mean_sh.
+    win : bool, optional
+        Decide if data should be winsorized before analysis. The decision has 
+        to be done after inspecting box-plots for each metric.
+        The default is False.
 
     Returns
     -------
@@ -631,17 +794,21 @@ def shap_t_statistics(shap_score_mean = shap_score_mean,
         DESCRIPTION.
 
     '''
+    # Preparation -------------------------------------------------------------
+    # Create empty dictionary
     comparison = {}
+    # Turn data into DataFrame to conduct t-tests on
     for i in list(shap_score_mean.keys()):
         comparison[i] = pd.DataFrame({'real':shap_score_mean[i],
                                   'shuffled':shap_score_mean_sh[i]})
-    
+        
+    # Perform winsorising if needed
     if win:
         for feat in comparison.keys():
             for col in comparison[feat].columns:
                 comparison[feat][col] = winsorising(comparison[feat][col])
     
-    # Perform a t-test
+    # Create empty dictionaries for statistics
     t_stat = {}
     p_val = {}
     confint = {}
@@ -650,6 +817,9 @@ def shap_t_statistics(shap_score_mean = shap_score_mean,
     mean_sh = {}
     sd = {}
     sd_sh = {}
+    
+    # Computation -------------------------------------------------------------
+    # Compute t-tests for each feature
     for i in list(comparison.keys()):
         # Conduct t-test
         stat_res = pg.ttest(x=comparison[i]['real'], 
@@ -671,7 +841,8 @@ def shap_t_statistics(shap_score_mean = shap_score_mean,
     shap_statistics = {'t_statistic':t_stat, 'p_value': p_val,
                        'CI95%':confint, 'd':d, 'mean':mean,
                        'mean_sh':mean_sh, 'sd':sd, 'sd_sh':sd_sh}
-        
+    
+    # Return Results ----------------------------------------------------------    
     return comparison, shap_statistics
 
 comparison, shap_statistics = shap_t_statistics()
@@ -681,39 +852,44 @@ comparison_win, shap_statistics_win = shap_t_statistics(win = True)
 def list_overall_mean(shap_score_mean = shap_score_mean,
                       shap_score_mean_sh = shap_score_mean_sh):
     '''
-    
+    Function to store absolute mean SHAP-values for each feature to get descriptive 
+    overview about the strongest features
 
     Parameters
     ----------
-    shap_score_mean : TYPE, optional
-        DESCRIPTION. The default is shap_score_mean.
-    shap_score_mean_sh : TYPE, optional
-        DESCRIPTION. The default is shap_score_mean_sh.
+    shap_score_mean : Dictionary, optional
+        Features as keys containing lists of SHAP-values for each CV-iteration.
+        The default is shap_score_mean.
+    shap_score_mean_sh : Dictionary, optional
+        Features as keys containing lists of SHAP-values for each CV-iteration.
+        The default is shap_score_mean_sh.
 
     Returns
     -------
-    overall_mean : TYPE
-        DESCRIPTION.
+    overall_mean : Dictionary
+        Means of SHAP-values for features for both model versions.
     overall_sd : TYPE
-        DESCRIPTION.
+        Standard deviations of SHAP-values for features for both model versions.
 
     '''
-    
+    # Preparation -------------------------------------------------------------
     # Split data in both model versions 
     data = {'original':shap_score_mean, 'shuffled':shap_score_mean_sh}
     
-    # Prepare objects to store results
-    overall_mean = {'original':{}, 'shuffled':{}}
-    overall_sd = {'original':{}, 'shuffled':{}}
+    # Create dictionaries to store results
+    absolute_mean = {'original':{}, 'shuffled':{}}
+    absolute_sd = {'original':{}, 'shuffled':{}}
     
+    # Compute Metrics ---------------------------------------------------------
     # Iterate over each model version
     for version in data.keys():
         # Iterate over each predictor
         for predictor in shap_score_mean.keys():
             # Get Averages and SDs for each predictor
-            overall_mean[version][predictor] = np.mean(data[version][predictor])
-            overall_sd[version][predictor] = np.std(data[version][predictor])
-                                                               
-    return overall_mean, overall_sd
+            absolute_mean[version][predictor] = np.mean(data[version][predictor])
+            absolute_sd[version][predictor] = np.std(data[version][predictor])
+              
+    # Return Computed Metrics -------------------------------------------------                                                 
+    return absolute_mean, absolute_sd
 
 listed_predictors, listed_predictors_sd = list_overall_mean()

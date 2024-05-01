@@ -5,6 +5,8 @@ In the project a published dataset by Mendes et al. (N = 186) was used to predic
 
 The codefiles are:
 
-functions.py - Functions to retrieve, preprocess and analyse data which is called by the other scripts to keep them clean
-ml_analysis.py - Code for machine learning algorithm incorporating k-fold CV (extra script) and created by David Steyrl 
+*functions.py*- Functions to retrieve, preprocess and analyse data which is called by the other scripts to keep them clean
+*ml_analysis.py* - Code for machine learning algorithm incorporating k-fold CV (extra script) and created by David Steyrl 
 sklearn_repeated_group_k_fold.py
+
+Plots relevant wor the work are saved in the *plots* folder

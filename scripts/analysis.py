@@ -817,7 +817,7 @@ def shap_t_statistics(shap_score_mean = shap_score_mean,
     # Turn data into DataFrame to conduct t-tests on
     for i in list(shap_score_mean.keys()):
         comparison[i] = pd.DataFrame({'real':shap_score_mean[i],
-                                  'shuffled':shap_score_mean_sh[i]})
+                                      'shuffled':shap_score_mean_sh[i]})
         
     # Perform winsorising if needed
     if win:
@@ -1153,7 +1153,8 @@ print('Average p_value deviation is:', round(np.mean(p_dev),3),
 
 ###################################### Plots ##################################
 
-# Plot Model Performance evaluation
+# Model Performance Evaluation #
+# T-test Boxplots
 def plot_model_scores(data = results,
                       save = False):
     '''
@@ -1230,7 +1231,151 @@ def plot_model_scores(data = results,
 
 plot_model_scores()
 
-# Plot Hypothesis Testing
+# SHAP - Values #
+# Distributions
+def plot_SHAP_values(data=listed_predictors, save = False):
+    '''
+    Function to plot the distribution of SHAP-values for each model version 
+    (original/shuffled)
+
+    Parameters
+    ----------
+    data : TYPE, optional
+        DESCRIPTION. The default is listed_predictors.
+    save : TYPE, optional
+        DESCRIPTION. The default is False.
+
+    Returns
+    -------
+    None.
+
+    '''
+    # Prepare -----------------------------------------------------------------
+    # Set up object to store values correctly
+    data_df = {'version': [], 'shap_values': []}
+    
+    # Fill the object
+    for key, values in data.items():
+        version = [key] * len(values)  # Repeat the key as often as the size of the dictionary
+        shap_values = list(values.values())  # Extract values from the dictionary
+        data_df['version'].extend(version)
+        data_df['shap_values'].extend(shap_values)
+
+    # Turn into DataFrame
+    df = pd.DataFrame(data_df)
+
+    # Prepare Plot
+    # Set order
+    order = ['original', 'shuffled']
+    # Set theme
+    sns.set_theme(style='whitegrid')
+
+    # Make Plot ---------------------------------------------------------------
+    plt.figure(figsize=(15, 9))
+    # Make distribution plot
+    g = sns.displot(df, x="shap_values", 
+                    hue="version", 
+                    kind="kde", 
+                    fill=True,
+                    hue_order=order, 
+                    legend=False, 
+                    alpha=0.5)
+    
+    # Change axis labels
+    g.set_axis_labels('SHAP-Values', 'Density')
+    # Modify grid
+    g.tick_params(grid_linestyle=':', grid_alpha=.7)
+
+    # Customize
+    plt.gca().invert_xaxis()
+    plt.gca().yaxis.grid(True)
+    plt.gca().xaxis.grid(False)
+
+    # Complete ----------------------------------------------------------------
+    # Save Plot
+    if save:
+        plt.savefig('plots//SHAP_distribution.png', 
+                    bbox_inches="tight", dpi=500)
+        plt.savefig('plots//SHAP_distribution.pdf', 
+                    bbox_inches="tight", dpi=500)
+    
+    # Shoe Plot
+    plt.show()  
+    
+    # Return None -------------------------------------------------------------
+    return None
+    
+plot_SHAP_values()
+
+# Scatter
+def plot_regression_scatter(results = res, save = False):
+
+    # Prepare results ---------------------------------------------------------
+    # True values
+    true_values = np.concatenate([i['y_true'] for i in results['scores']])
+    # Predicted values
+    pred_values = np.concatenate([i['y_pred'] for i in results['scores']])
+
+    # Make plot ---------------------------------------------------------------
+    palette = sns.color_palette()
+    # Make figure
+    fig, ax = plt.subplots(figsize=(8, 8), dpi = 300)
+    # Print data
+    ax.scatter(pred_values,
+               true_values,
+               zorder=2,
+               alpha=0.1,
+               color=palette[0])
+    # Add optimal fit line
+    ax.plot([-10000, 10000], [-10000, 10000],
+            color=palette[1],
+            zorder=3,
+            linewidth=2,
+            alpha=0.3)
+    # Fix aspect
+    ax.set_aspect(1)
+    # Remove top, right and left frame elements
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    # Remove ticks
+    ax.tick_params(axis='both', which='major', reset=True,
+                   bottom=True, top=False, left=True, right=False)
+    # Add grid
+    ax.grid(visible=True, which='major', axis='both')
+    # Modify grid
+    ax.tick_params(grid_linestyle=':', grid_alpha=.7)
+    # Get true values range
+    true_values_range = max(true_values) - min(true_values)
+    # Set x-axis limits
+    ax.set_xlim(min(true_values) - true_values_range/20,
+                max(true_values) + true_values_range/20)
+    # Set y-axis limits
+    ax.set_ylim(min(true_values) - true_values_range/20,
+                max(true_values) + true_values_range/20)
+    
+    # Set xlabel
+    ax.set_xlabel('Predicted values', fontsize=17)
+    # Set x ticks size
+    plt.xticks(fontsize=12)
+    # Set ylabel
+    ax.set_ylabel('True values', fontsize=17)
+    # Set y ticks size
+    plt.yticks(fontsize=12)
+
+    # Save figure -------------------------------------------------------------
+    # Save figure
+    if save:
+        plt.savefig('plots/scatter.png', dpi=300, bbox_inches='tight')
+    # Show figure
+    plt.show()
+
+    # Return None -------------------------------------------------------------
+    return None
+
+plot_regression_scatter()
+
+# Hypothesis Testing #
+# T-test Boxplots
 def plot_hypothesis_testing(network_results = network_results,
                             save = False):
     '''
@@ -1315,3 +1460,206 @@ def plot_hypothesis_testing(network_results = network_results,
 
 # Call the function with your DataFrame
 plot_hypothesis_testing()
+    
+# Exploratory Analysis #
+# Plot for linearity for hyperparameter OLS
+def lin_plot_colsample(save = False):
+    '''
+    Function to plot the predictor colsample against the outcome mae of the 
+    model scores
+
+    Parameters
+    ----------
+    save : bool, optional
+        Decide, if the plot should be saved. 
+        The default is False.
+
+    Returns
+    -------
+    None.
+
+    '''
+    # Prepare -----------------------------------------------------------------
+    # Set Style
+    sns.set_style('whitegrid')
+    
+    # Make Plot ---------------------------------------------------------------
+    # Regression Plot
+    sns.regplot(x = 'colsample_bytree', y = 'mae', data = results,
+                line_kws = {'color': 'darkorange', 'alpha': 0.3})
+    # Remove Grid
+    sns.despine(left=True)
+    
+    # Change Axis Descriptions
+    plt.xlabel('Colsample by Tree')
+    plt.ylabel('MAE')
+    
+    # Save Plot
+    if save:
+        plt.savefig('plots//lin_plot_colsample.png', dpi = 300)
+    
+    # Show Plot
+    plt.show()
+    
+    # Return None -------------------------------------------------------------
+    return None
+
+lin_plot_colsample()
+
+Plot for linearity for hyperparameter OLS
+def lin_plot_pathsmooth(save = False):
+    '''
+    Function to plot the predictor pathsmooth against the outcome mae of the 
+    model scores. The plot is adapted with a break in the x-axis as pathsmooth
+    has some extreme outliers
+
+    Parameters
+    ----------
+    save : bool, optional
+        Decide, if the plot should be saved. 
+        The default is False.
+
+    Returns
+    -------
+    None.
+
+    '''
+    # Prepare -----------------------------------------------------------------
+    # Prepare a plot for two subplots
+    fig, (ax1, ax2) = plt.subplots(ncols=2,
+                                   sharey=True,
+                                   gridspec_kw={'width_ratios':[1,1]},
+                                   figsize=(12,8)) 
+    
+    # Make Plot ---------------------------------------------------------------
+    # First Plot for regular values
+    sns.regplot(x=results['path_smooth'], y=results['mae'],
+            line_kws={'color': 'darkorange', 'alpha': 0.3}, ax=ax1)
+    # Second Plot for outliers
+    sns.regplot(x=results['path_smooth'], y=results['mae'],
+            line_kws={'color': 'darkorange', 'alpha': 0.3}, ax=ax2)
+    
+    # Change Labels
+    label = 'Path Smooth'
+    fig.text(0.5, 0.04, label, ha='center', fontsize=14)
+    ax1.set_xlabel(None)
+    ax1.set_ylabel(None)
+    
+    # Set common ylabel
+    fig.text(0.04, 0.5, 'MAE', va='center', rotation='vertical', fontsize=14)
+    
+    # Customize axis limits
+    ax1.set_xlim(0,8)
+    ax2.set_xlim(200,250)
+    ax2.set_xlabel(None)
+    ax2.set_ylabel(None)
+    
+    # Hide the spines between ax and ax2
+    ax1.spines['right'].set_visible(False)
+    ax2.spines['left'].set_visible(False)
+    
+    d = .015 # how big to make the diagonal lines in axes coordinates
+    # arguments to pass plot, just so we don't keep repeating them
+    kwargs = dict(transform=ax1.transAxes, color='k', clip_on=False)
+    ax1.plot((1-d,1+d), (-d,+d), **kwargs)
+    ax1.plot((1-d,1+d),(1-d,1+d), **kwargs)
+    
+    kwargs.update(transform=ax2.transAxes)  # switch to the bottom axes
+    ax2.plot((-d,+d), (1-d,1+d), **kwargs)
+    ax2.plot((-d,+d), (-d,+d), **kwargs)
+    
+    # Adjust the spacing between subplots
+    plt.subplots_adjust(wspace=0.1)
+    
+    # Complete ----------------------------------------------------------------
+    # Save Plot
+    if save:
+        plt.savefig('plots//lin_plot_pathsmooth.png', dpi = 300)
+    # Show Plot
+    plt.show()
+    
+    # Return None -------------------------------------------------------------
+    return None
+
+lin_plot_pathsmooth()
+
+# T-test Boxplots
+def plot_control_ttest(data = comparison, save = False):
+    '''
+    Function to plot comparison boxplots of SHAP-values for the control 
+    variables age and sex
+
+    Parameters
+    ----------
+    data : Dictionary, optional
+        Features as key containing a DataFrame each with columns 'original' and
+        'shuffled' to compare SHAP-values. 
+        The default is comparison.
+        
+    save : bool, optional
+        Decide, if the plot should be saved. 
+        The default is False.
+
+    Returns
+    -------
+    None.
+
+    '''
+    # Preparation -------------------------------------------------------------
+    # Rename and reshape data
+    data = pd.DataFrame({'age'   :data['age']['real'],
+                         'age_sh':data['age']['shuffled'],
+                         'sex'   :data['gender']['real'],
+                         'sex_sh':data['gender']['shuffled']})
+    
+    # Prepare paiers for comparison
+    pairs = [('age', 'age_sh'),
+             ('sex', 'sex_sh')]
+    
+    # Assign equal labels
+    labels = ['Age', 'Sex']
+    
+    # Set Theme
+    sns.set_theme(style = 'whitegrid')
+    
+    # Create a 1x3 subplot grid for three subplots
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5), sharey=False)
+    
+    # Make Plots --------------------------------------------------------------
+    # Loop through the pairs and create boxplots in each subplot
+    for i, (col1, col2) in enumerate(pairs):
+        ax = axes[i]
+        # Plot Boxplot
+        sns.boxplot(data=data[[col1, col2]], 
+                    ax=ax, 
+                    palette = sns.color_palette('Paired'), 
+                    boxprops=dict(alpha=1))
+        
+        # Set axis labels
+        ax.set_xlabel(labels[i], 
+                      fontsize = 14)
+        
+        ax.set_xticklabels(['Original', 'Shuffled'],
+                           fontsize = 14)
+        
+        ax = sns.stripplot(data=data[[col1, col2]], 
+                           ax=ax, 
+                           color="orange", 
+                           jitter=0.1, 
+                           size=4.5)
+    
+    # Adjust layout
+    plt.tight_layout()
+    
+    # Complete ----------------------------------------------------------------
+    # Save Plot
+    if save:
+        plt.savefig('plots//control_ttest_plot.png', dpi = 300)
+        
+    # Show Plot
+    plt.show()
+    
+    # Return None -------------------------------------------------------------
+    return None
+    
+plot_control_ttest()

@@ -22,10 +22,12 @@ outcome scale, this work underlines the need for data examination in modeling ta
 ## Codefiles
 The codefiles are:
 
-**functions.py**- Functions to retrieve, preprocess and analyse data which is called by the other scripts to keep them clean
+**functions.py** - Functions to retrieve, preprocess and analyse data which is called by the other scripts to keep them clean. Authored by Luis Glenzer
 
-**ml_analysis.py** - Code for machine learning algorithm incorporating k-fold CV (extra script) and created by David Steyrl 
+**analysis** - Script for statistical analysis of the data to answer research question and test hypotheses. Authored by Luis Glenzer
 
-**sklearn_repeated_group_k_fold.py**  - Code for *k*-fold Cross-Validation created by and edited by David Steyrl
+**ml_analysis.py** - Code for machine learning algorithm incorporating k-fold CV (extra script). Authored by David Steyrl 
+
+**sklearn_repeated_group_k_fold.py**  - Code for *k*-fold Cross-Validation. Authored by David Steyrl
 
 Plots relevant for the work are saved in the **plots** folder

@@ -11,7 +11,7 @@ neural mechanisms are not fully understood. This work aims to fill the gap by ap
 connectivity (rsFC). Successful prediction would contribute to the framework of digital phenotyping helping to identify relevant networks and robust markers of psychologic dysfunctionality, more valid
 than self-report questionnaires. Therefore, a previously collected sample of N=186 participants, each providing 3*15min resting state scans was analyzed hypothesizing that three networks are relevant
 for predicting IA, namely the reward-network, self-referential-network and attention-network. In a nested cross-validation scheme, both an original and a null model were fitted. The original model
-showed significantly better performance than the shuffled model (MAE: M = 6.76 ± 0.697 vs. M = 7.497 ± 0.708, p < .001; R2: M = .086 ± .104 vs. M = -.105 ± .103, p < .001) however original feature
+showed significantly better performance than the shuffled model (MAE: *M* = 6.76 ± 0.697 vs. *M* = 7.497 ± 0.708, *p* < .001; $R^2$: *M* = .086 ± .104 vs. *M* = -.105 ± .103, *p* < .001) however original feature
 importance for the respective networks did not significantly exceed that of the shuffled model, leading to the rejection of all hypotheses. As prediction mainly failed due to the distribution of the
 outcome scale, this work underlines the need for data examination in modeling tasks. 
 

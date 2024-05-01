@@ -14,7 +14,9 @@ for predicting IA, namely the reward-network, self-referential-network and atten
 showed significantly better performance than the shuffled model (MAE: M = 6.76 ± 0.697 vs. M = 7.497 ± 0.708, p < .001; R2: M = .086 ± .104 vs. M = -.105 ± .103, p < .001) however original feature
 importance for the respective networks did not significantly exceed that of the shuffled model, leading to the rejection of all hypotheses. As prediction mainly failed due to the distribution of the
 outcome scale, this work underlines the need for data examination in modeling tasks. 
+
 **Words**: 248
+
 **Keywords**: Predictive Modeling, Functional Connectomes, Internet Addiction, Social-Media, rsfMRI
 
 ## Codefiles

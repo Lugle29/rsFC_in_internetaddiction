@@ -26,8 +26,8 @@ Full-Text Master Thesis is stored as **MasterThesis_Glenzer.pdf**
 ## Codefiles
 The codefiles are:
 
-- **functions.py** - Functions to retrieve, preprocess and analyse data which is called by the other scripts to keep them clean. Authored by Luis Glenzer
-- **analysis** - Script for statistical analysis of the data to answer research question and test hypotheses. Authored by Luis Glenzer
+- **functions.py** - Functions to retrieve, preprocess and analyse data which is called by the other scripts to keep them clean.
+- **analysis.py** - Script for statistical analysis of the data to answer research question and test hypotheses.
 - **ml_analysis.py** - Code for machine learning algorithm incorporating k-fold CV (extra script). Authored by David Steyrl
 - **sklearn_repeated_group_k_fold.py**  - Code for *k*-fold Cross-Validation. Authored by David Steyrl
 

@@ -19,6 +19,10 @@ outcome scale, this work underlines the need for data examination in modeling ta
 
 **Keywords**: Predictive Modeling, Functional Connectomes, Internet Addiction, Social-Media, rsfMRI
 
+## Full Text
+
+Full-Text Master Thesis is stores as **MasterThesis_Glenzer.pdf**
+
 ## Codefiles
 The codefiles are:
 

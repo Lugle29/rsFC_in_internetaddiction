@@ -34,4 +34,6 @@ The codefiles are:
 
 **sklearn_repeated_group_k_fold.py**  - Code for *k*-fold Cross-Validation. Authored by David Steyrl
 
+## Plots
+
 Plots relevant for the work are saved in the **plots** folder

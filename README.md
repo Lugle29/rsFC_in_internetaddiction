@@ -21,7 +21,7 @@ outcome scale, this work underlines the need for data examination in modeling ta
 
 ## Full Text
 
-Full-Text Master Thesis is stores as **MasterThesis_Glenzer.pdf**
+Full-Text Master Thesis is stored as **MasterThesis_Glenzer.pdf**
 
 ## Codefiles
 The codefiles are:
